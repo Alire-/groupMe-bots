@@ -83,7 +83,7 @@ def print_all_groups_with_number_beside_each():
         print("You are not part of any groups.")
         return
     for i in range(len(data['response'])):
-        group = data['response'][i]['name']
+        group = str(data['response'][i]['name'].encode("utf-8"))
         print(str(i)+"\'"+group+"\'")
     return data
 
@@ -95,7 +95,7 @@ def get_group_name(groups_data, group_id):
     i = 0
     while True:
         if group_id == groups_data['response'][i]['group_id']:
-            return groups_data['response'][i]['name']
+            return str(groups_data['response'][i]['name'].encode("utf-8"))
         i += 1
 
 def get_number_of_messages_in_group(groups_data, group_id):
