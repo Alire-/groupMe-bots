@@ -7,13 +7,16 @@ at = ""
 
 def launch():
     global at
-    #add your access token here:
-    at = str('2l4bfxpO7e51RtJn6T0BhPIH8SnOl7MKMvFmikGh')
+
+    at = str(raw_input("What is your access token:"))
     print("Here are your ten most recent groups:")
     groups_data = print_all_groups_with_number_beside_each()
     try:
         group_number = int(raw_input("Enter the number of the group you would like to analyze:"))
         like_number = str(raw_input("Like-0, Dislike-1: "))
+        while not (like_number in ("0", "1")):
+            print("Please enter 0 or 1")
+            like_number = str(raw_input("Like-0, Dislike-1: "))
         likeUsername = str(raw_input("Enter Groupme Name: "))
         group_id = get_group_id(groups_data, group_number)
         group_name = get_group_name(groups_data, group_id)
@@ -29,6 +32,7 @@ def analyze_group(group_id, number_of_messages, like_number, likeUsername):
     message_with_only_alphanumeric_characters = ''
     message_id = 0
     iterations = 0.0
+    likeCount = 0
     while True:
         for i in range(20):  # api 20 message cycle
             try:
@@ -45,6 +49,8 @@ def analyze_group(group_id, number_of_messages, like_number, likeUsername):
                 sender_id = data['response']['messages'][i]['sender_id']  # sender id
             except IndexError:
                 print("Finished")
+                print(str(likeCount) + " messages likebot-ed")
+                exit()
 
 
             if ((str(name) == str(likeUsername))):
@@ -52,16 +58,18 @@ def analyze_group(group_id, number_of_messages, like_number, likeUsername):
 
                     requests.post('https://api.groupme.com/v3/messages/' + group_id + '/' + str(
                     data['response']['messages'][i]['id']) + '/like?token=' + at)
+                    likeCount += 1
                 else:
                     requests.post('https://api.groupme.com/v3/messages/' + group_id + '/' + str(
                     data['response']['messages'][i]['id']) + '/unlike?token=' + at)
+                    likeCount += 1
 
         if i == 19:
                 message_id = data['response']['messages'][i]['id']
                 remaining = iterations/number_of_messages
                 remaining *= 100
                 remaining = round(remaining, 2)
-                print(str(remaining)+' percent done, timestamp: ' + str(timeStamp))
+                print(str(remaining)+' percent done, timestamp: ' + str(timeStamp) + " in unix time, messages affected: " + str(likeCount))
 
         payload = {'before_id': message_id}
         response = requests.get('https://api.groupme.com/v3/groups/'+group_id+'/messages?token='+at, params=payload)
