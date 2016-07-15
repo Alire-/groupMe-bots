@@ -15,6 +15,8 @@ You will need:
 ## LikeBot
 An original like bot for group chats. It can like all the messages of a specific user or dislike all the messages. In the likebot.py script, there are options in the code to configure it for more specific filters in terms of which messages to likebot, such as opening the likebot to affecting all users (will be connected with UI in later features).
 
+Windows (`.exe`) and OSX executables for the likebot can be found in the executables folder.
+
 ## Analysis Bot
 An analysis bot for group chats. Includes code from `https://github.com/cdzombak/groupme-tools/blob/master/README.md`. Allows for the robust analysis of GroupMe chat groups.
 
