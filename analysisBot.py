@@ -3,9 +3,12 @@ import re
 import sys
 from pprint import pprint
 
-at = ""  # this is a global variable that stores the API token
+# Global variable that stores the API token
+at = ""  
 
+####### Interact with user for necessary parameters for analysis
 
+# Initial menu for fetching the API token and the desired group to be analyzed
 def menu():
     global at
     print('If you have not done so already, go to the following website to receive your API token: ' +
@@ -20,11 +23,10 @@ def menu():
     except ValueError:
         print("Not a number")
 
-
+# List all groups open to user
 def print_all_groups_with_number_beside_each():
     response = requests.get('https://api.groupme.com/v3/groups?token='+at)
     data = response.json()
-
     if len(data['response']) == 0:
         print("You are not part of any groups.")
         return
@@ -34,29 +36,9 @@ def print_all_groups_with_number_beside_each():
     return data
 
 
-def get_group_id(groups_data, group_number):
+####### Methods for getting group information
 
-    group_id = groups_data['response'][group_number]['id']
-    return group_id
-
-
-def prepare_analysis_of_group(groups_data, group_id):
-    # these three lines simply display info to the user before the analysis begins
-    group_name = get_group_name(groups_data, group_id)
-    number_of_messages = get_number_of_messages_in_group(groups_data, group_id)
-    print("Analyzing "+str(number_of_messages) + " messages from " + group_name)
-
-    #these two lines put all the members currently in the group into a dictionary
-    members_of_group_data = get_group_members(groups_data, group_id)
-    user_dictionary = prepare_user_dictionary(members_of_group_data)
-
-    #this line calls the "analyze_group" method which goes through the entire conversation
-    user_id_mapped_to_user_data = analyze_group(group_id, user_dictionary, number_of_messages)
-
-    #this line displays the data to the user
-    display_data(user_id_mapped_to_user_data)
-
-
+# Find the name of groups
 def get_group_name(groups_data, group_id):
     i = 0
     while True:
@@ -64,6 +46,11 @@ def get_group_name(groups_data, group_id):
             return groups_data['response'][i]['name']
         i += 1
 
+# Find the ID of the selected group to proceed with analysis
+def get_group_id(groups_data, group_number):
+
+    group_id = groups_data['response'][group_number]['id']
+    return group_id
 
 def get_number_of_messages_in_group(groups_data, group_id):
     i = 0
@@ -72,7 +59,6 @@ def get_number_of_messages_in_group(groups_data, group_id):
             return groups_data['response'][i]['messages']['count']
         i += 1
 
-
 def get_group_members(groups_data, group_id):
     i = 0
     while True:
@@ -80,25 +66,48 @@ def get_group_members(groups_data, group_id):
             return groups_data['response'][i]['members']
         i += 1
 
+####### Analyzing group messages
 
+# Fetching basic metrics of the group
+def prepare_analysis_of_group(groups_data, group_id):
+    # Return basic information of the group
+    group_name = get_group_name(groups_data, group_id)
+    number_of_messages = get_number_of_messages_in_group(groups_data, group_id)
+    print("Analyzing "+str(number_of_messages) + " messages from " + group_name)
+    # Map the users
+    members_of_group_data = get_group_members(groups_data, group_id)
+    user_dictionary = prepare_user_dictionary(members_of_group_data)
+    # Analyze the group's messages
+    user_id_mapped_to_user_data = analyze_group(group_id, user_dictionary, number_of_messages)
+    # Return the data
+    display_data(user_id_mapped_to_user_data)
+
+# Map users
 def prepare_user_dictionary(members_of_group_data):
     user_dictionary = {}
     i = 0
     while True:
         try:
+            # Get information of the user
             user_id = members_of_group_data[i]['user_id']
             nickname = members_of_group_data[i]['nickname']
             user_dictionary[user_id] = [nickname, 0.0, 0.0, 0.0, 0.0, {}, {}, 0.0]
-            # [0] = nickname, [1] = total messages sent in group, like count, [2] = likes per message,
-            # [3] = average likes received per message, [4] = total words sent, [5] = dictionary of likes received from each member
-            # [6] = dictionary of shared likes, [7] = total likes given
+            # Optional metrics that can be measured for each user:
+            # [0] = nickname, 
+            # [1] = total messages sent in group, like count, 
+            # [2] = likes per message,
+            # [3] = average likes received per message, 
+            # [4] = total words sent, 
+            # [5] = dictionary of likes received from each member
+            # [6] = dictionary of shared likes, 
+            # [7] = total likes given
 
-        except IndexError:  # it will reach here when it gets to the end of the members
+        except IndexError:  
             return user_dictionary
         i += 1
     return user_dictionary
 
-
+# Analyzing the messages
 def analyze_group(group_id, user_id_mapped_to_user_data, number_of_messages):
 
     response = requests.get('https://api.groupme.com/v3/groups/'+group_id+'/messages?token='+at)
@@ -109,7 +118,6 @@ def analyze_group(group_id, user_id_mapped_to_user_data, number_of_messages):
     while True:
         for i in range(20):  # in range of 20 because API sends 20 messages at once
             try:
-
                 iterations += 1
                 name = data['response']['messages'][i]['name']  # grabs name of sender
                 message = data['response']['messages'][i]['text']  # grabs text of message
@@ -122,7 +130,6 @@ def analyze_group(group_id, user_id_mapped_to_user_data, number_of_messages):
                 sender_id = data['response']['messages'][i]['sender_id']  # grabs sender id
                 list_of_favs = data['response']['messages'][i]['favorited_by']  # grabs list of who favorited message
                 length_of_favs = len(list_of_favs)  # grabs number of users who liked message
-
 
                 #grabs the number of words in message
                 number_of_words_in_message = len(re.findall(r'\w+', str(message_with_only_alphanumeric_characters)))
@@ -180,6 +187,7 @@ def analyze_group(group_id, user_id_mapped_to_user_data, number_of_messages):
         response = requests.get('https://api.groupme.com/v3/groups/'+group_id+'/messages?token='+at, params=payload)
         data = response.json()
 
+####### Information rendering/parsing
 
 def display_data(user_id_mapped_to_user_data):
 
@@ -238,9 +246,10 @@ def display_data(user_id_mapped_to_user_data):
             sys.stdout.write(str(percent_shared)+'%, ')
         print
         print
-    #uncomment this line below to view the raw dictionary
-    #pprint(user_id_mapped_to_user_data)
+        
+# Uncomment this line below to view the raw dictionary
+# pprint(user_id_mapped_to_user_data)
 
-#this method call is here so the program starts right when you run it.
+# Initiate program
 menu()
 

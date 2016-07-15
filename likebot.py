@@ -1,20 +1,16 @@
-# Copyright (c) 2016, Eric Zhao and Whimmly, All Rights Reserved. 
-# THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
-# KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-# PARTICULAR PURPOSE.
-
-
 import requests
 import re
 import sys
 from pprint import pprint
 
+# Global variable that stores the API token
 at = ""
 
+####### Interact with user for necessary parameters for analysis
+
+# Initiate program function
 def launch():
     global at
-
     at = str(raw_input("What is your access token:"))
     print("Here are your ten most recent groups:")
     groups_data = print_all_groups_with_number_beside_each()
@@ -32,6 +28,43 @@ def launch():
         analyze_group(group_id, number_of_messages, like_number, likeUsername)
     except ValueError:
         print("Not a number")
+
+# List all groups open to user
+def print_all_groups_with_number_beside_each():
+    response = requests.get('https://api.groupme.com/v3/groups?token='+at)
+    data = response.json()
+    if len(data['response']) == 0:
+        print("You are not part of any groups.")
+        return
+    for i in range(len(data['response'])):
+        group = str(data['response'][i]['name'].encode("utf-8"))
+        print(str(i)+"\'"+group+"\'")
+    return data
+
+
+####### Methods for getting group information
+
+# Find the name of groups
+def get_group_name(groups_data, group_id):
+    i = 0
+    while True:
+        if group_id == groups_data['response'][i]['group_id']:
+            return groups_data['response'][i]['name']
+        i += 1
+
+# Find the ID of the selected group to proceed with analysis
+def get_group_id(groups_data, group_number):
+    group_id = groups_data['response'][group_number]['id']
+    return group_id
+
+def get_number_of_messages_in_group(groups_data, group_id):
+    i = 0
+    while True:
+        if group_id == groups_data['response'][i]['group_id']:
+            return groups_data['response'][i]['messages']['count']
+        i += 1
+
+####### Analyze 
 
 def analyze_group(group_id, number_of_messages, like_number, likeUsername):
     response = requests.get('https://api.groupme.com/v3/groups/'+group_id+'/messages?token='+at)
@@ -59,10 +92,13 @@ def analyze_group(group_id, number_of_messages, like_number, likeUsername):
                 print(str(likeCount) + " messages likebot-ed")
                 exit()
 
+            # You can get rid of this outer:
+            # if ((str(name) == str(likeUsername))):
+            # if you want the likebot to affect all users
 
+            # Currently, the bot will only affect posts by you
             if ((str(name) == str(likeUsername))):
                 if ((str(like_number) == "0")):
-
                     requests.post('https://api.groupme.com/v3/messages/' + group_id + '/' + str(
                     data['response']['messages'][i]['id']) + '/like?token=' + at)
                     likeCount += 1
@@ -82,36 +118,5 @@ def analyze_group(group_id, number_of_messages, like_number, likeUsername):
         response = requests.get('https://api.groupme.com/v3/groups/'+group_id+'/messages?token='+at, params=payload)
         data = response.json()
 
-#extra Functions
-def print_all_groups_with_number_beside_each():
-    response = requests.get('https://api.groupme.com/v3/groups?token='+at)
-    data = response.json()
-    if len(data['response']) == 0:
-        print("You are not part of any groups.")
-        return
-    for i in range(len(data['response'])):
-        group = str(data['response'][i]['name'].encode("utf-8"))
-        print(str(i)+"\'"+group+"\'")
-    return data
-
-def get_group_id(groups_data, group_number):
-    group_id = groups_data['response'][group_number]['id']
-    return group_id
-
-def get_group_name(groups_data, group_id):
-    i = 0
-    while True:
-        if group_id == groups_data['response'][i]['group_id']:
-            return str(groups_data['response'][i]['name'].encode("utf-8"))
-        i += 1
-
-def get_number_of_messages_in_group(groups_data, group_id):
-    i = 0
-    while True:
-        if group_id == groups_data['response'][i]['group_id']:
-            return groups_data['response'][i]['messages']['count']
-        i += 1
-
-
+# Initiate method
 launch()
-
